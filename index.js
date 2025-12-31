@@ -7,7 +7,27 @@ const port = process.env.PORT || 3000;
 // Try to get credentials from ENV first (for Cloud), otherwise file (for Local)
 let serviceAccount;
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-  serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  try {
+    // Handle potential double-stringification or formatting issues
+    let raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+    if (typeof raw === 'string') {
+      // If it was wrapped in quotes during copy-paste, remove them
+      if (raw.startsWith('"') && raw.endsWith('"')) {
+        raw = raw.slice(1, -1);
+      }
+      // Fix escaped newlines in private key if they were double-escaped
+      serviceAccount = JSON.parse(raw);
+      if (serviceAccount.private_key) {
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+      }
+    } else {
+      serviceAccount = raw;
+    }
+  } catch (e) {
+    console.error("Error parsing FIREBASE_SERVICE_ACCOUNT:", e);
+    // Fallback or exit? For now let it crash so we see the error
+    throw e;
+  }
 } else {
   serviceAccount = require("./service_account.json");
 }
