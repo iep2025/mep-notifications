@@ -1,0 +1,13 @@
+{
+    "name": "mep-notification-backend",
+    "version": "1.0.0",
+    "description": "Local backend for sending FCM notifications",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {
+        "express": "^5.2.1",
+        "firebase-admin": "^11.11.1"
+    }
+}
