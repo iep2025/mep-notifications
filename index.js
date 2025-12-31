@@ -1,5 +1,7 @@
 const admin = require("firebase-admin");
 const express = require("express");
+const fs = require("fs");
+const path = require("path");
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -33,8 +35,7 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     }
 
     // 3. Fix Private Key Newlines
-    if (serviceAccount.private_key && serviceAccount.private_key.includes('\\n')) {
-      console.log("Fixing escaped newlines in private key...");
+    if (serviceAccount.private_key) {
       serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
 
@@ -43,16 +44,33 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     throw e;
   }
 } else {
-  serviceAccount = require("./service_account.json");
+  // Local fallback
+  const localPath = path.join(__dirname, "service_account.json");
+  if (fs.existsSync(localPath)) {
+    serviceAccount = require(localPath);
+  } else {
+    // Try parent directory if not found (for subfolder cases)
+    const parentPath = path.join(__dirname, "..", "service_account.json");
+    if (fs.existsSync(parentPath)) {
+      serviceAccount = require(parentPath);
+    } else {
+      throw new Error("Service account file not found!");
+    }
+  }
 }
 
 console.log("Server Time:", new Date().toISOString());
 console.log("Loaded Service Account for Project:", serviceAccount.project_id);
 console.log("Client Email:", serviceAccount.client_email);
 console.log("Private Key Length:", serviceAccount.private_key ? serviceAccount.private_key.length : "MISSING");
+console.log("Private Key Newline Check:", serviceAccount.private_key && serviceAccount.private_key.includes('\n') ? "PASSED (Real Newlines)" : "FAILED (No Newlines)");
+
+// Write to a temporary file to ensure the SDK reads it correctly
+const tempSaPath = path.join(__dirname, 'service_account_temp.json');
+fs.writeFileSync(tempSaPath, JSON.stringify(serviceAccount));
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+  credential: admin.credential.cert(tempSaPath)
 });
 
 const db = admin.firestore();
