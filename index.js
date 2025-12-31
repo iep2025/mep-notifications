@@ -63,6 +63,13 @@ console.log("🚀 MEP Notification Server Started");
 console.log("Listening for new notifications in Firestore...");
 console.log("---------------------------------------------------");
 
+// Startup Check: Verify connection
+db.collection("notifications").limit(1).get().then(snapshot => {
+  console.log(`✅ Startup Check Passed: Successfully connected to Firestore. Found ${snapshot.size} documents.`);
+}).catch(e => {
+  console.error("❌ Startup Check Failed: Could not connect to Firestore.", e);
+});
+
 // Listen for new notifications
 db.collection("notifications").onSnapshot(snapshot => {
   snapshot.docChanges().forEach(async change => {
