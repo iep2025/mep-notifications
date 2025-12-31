@@ -8,21 +8,36 @@ const port = process.env.PORT || 3000;
 let serviceAccount;
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   try {
-    // Handle potential double-stringification or formatting issues
     let raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+
+    // 1. Try Base64 Decoding (if it doesn't look like JSON)
+    if (!raw.trim().startsWith('{')) {
+      try {
+        const decoded = Buffer.from(raw, 'base64').toString('utf8');
+        if (decoded.trim().startsWith('{')) {
+          console.log("Detected Base64 encoded credentials. Decoding...");
+          raw = decoded;
+        }
+      } catch (e) { /* Not base64 */ }
+    }
+
+    // 2. Handle String formatting (Quotes)
     if (typeof raw === 'string') {
-      // If it was wrapped in quotes during copy-paste, remove them
-      if (raw.startsWith('"') && raw.endsWith('"')) {
-        raw = raw.slice(1, -1);
+      if (raw.trim().startsWith('"') && raw.trim().endsWith('"')) {
+        console.log("Removing surrounding quotes from credentials...");
+        raw = raw.trim().slice(1, -1);
       }
-      // Fix escaped newlines in private key if they were double-escaped
       serviceAccount = JSON.parse(raw);
-      if (serviceAccount.private_key) {
-        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
-      }
     } else {
       serviceAccount = raw;
     }
+
+    // 3. Fix Private Key Newlines
+    if (serviceAccount.private_key && serviceAccount.private_key.includes('\\n')) {
+      console.log("Fixing escaped newlines in private key...");
+      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    }
+
   } catch (e) {
     console.error("Error parsing FIREBASE_SERVICE_ACCOUNT:", e);
     throw e;
@@ -36,7 +51,8 @@ console.log("Client Email:", serviceAccount.client_email);
 console.log("Private Key Length:", serviceAccount.private_key ? serviceAccount.private_key.length : "MISSING");
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+  credential: admin.credential.cert(serviceAccount),
+  projectId: serviceAccount.project_id
 });
 
 const db = admin.firestore();
