@@ -25,12 +25,15 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     }
   } catch (e) {
     console.error("Error parsing FIREBASE_SERVICE_ACCOUNT:", e);
-    // Fallback or exit? For now let it crash so we see the error
     throw e;
   }
 } else {
   serviceAccount = require("./service_account.json");
 }
+
+console.log("Loaded Service Account for Project:", serviceAccount.project_id);
+console.log("Client Email:", serviceAccount.client_email);
+console.log("Private Key Length:", serviceAccount.private_key ? serviceAccount.private_key.length : "MISSING");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
