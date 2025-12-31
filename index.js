@@ -46,13 +46,13 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   serviceAccount = require("./service_account.json");
 }
 
+console.log("Server Time:", new Date().toISOString());
 console.log("Loaded Service Account for Project:", serviceAccount.project_id);
 console.log("Client Email:", serviceAccount.client_email);
 console.log("Private Key Length:", serviceAccount.private_key ? serviceAccount.private_key.length : "MISSING");
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  projectId: serviceAccount.project_id
+  credential: admin.credential.cert(serviceAccount)
 });
 
 const db = admin.firestore();
