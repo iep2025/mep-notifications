@@ -74,6 +74,7 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
+db.settings({ preferRest: true }); // Force REST instead of gRPC (more reliable on Render)
 const messaging = admin.messaging();
 
 console.log("---------------------------------------------------");
