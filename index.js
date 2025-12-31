@@ -1,4 +1,3 @@
-```javascript
 const admin = require("firebase-admin");
 const express = require("express");
 const app = express();
@@ -27,44 +26,44 @@ console.log("---------------------------------------------------");
 
 // Listen for new notifications
 db.collection("notifications").onSnapshot(snapshot => {
-    snapshot.docChanges().forEach(async change => {
-        if (change.type === "added") {
-            const data = change.doc.data();
-            const docId = change.doc.id;
+  snapshot.docChanges().forEach(async change => {
+    if (change.type === "added") {
+      const data = change.doc.data();
+      const docId = change.doc.id;
 
-            // Check if already sent to avoid duplicates (if you add a 'status' field later)
-            // For now, we rely on the fact that this script runs live.
-            // Ideally, we should check a flag. Let's check if 'sentAt' exists.
-            if (data.sentAt) return;
+      // Check if already sent to avoid duplicates (if you add a 'status' field later)
+      // For now, we rely on the fact that this script runs live.
+      // Ideally, we should check a flag. Let's check if 'sentAt' exists.
+      if (data.sentAt) return;
 
-            console.log(`\n[NEW] Notification detected: "${data.title}"`);
+      console.log(`\n[NEW] Notification detected: "${data.title}"`);
 
-            // Normalize topic
-            const topic = (data.target || "all").toLowerCase().replace(/\s+/g, "_");
+      // Normalize topic
+      const topic = (data.target || "all").toLowerCase().replace(/\s+/g, "_");
 
-            const message = {
-                notification: {
-                    title: data.title,
-                    body: data.body,
-                },
-                topic: topic,
-            };
+      const message = {
+        notification: {
+          title: data.title,
+          body: data.body,
+        },
+        topic: topic,
+      };
 
-            try {
-                const response = await messaging.send(message);
-                console.log(`✅ Sent to topic '${topic}': ${ response } `);
+      try {
+        const response = await messaging.send(message);
+        console.log(`✅ Sent to topic '${topic}': ${response}`);
 
-                // Mark as sent to avoid re-sending if script restarts
-                await db.collection("notifications").doc(docId).update({
-                    sentAt: admin.firestore.FieldValue.serverTimestamp(),
-                    messageId: response
-                });
+        // Mark as sent to avoid re-sending if script restarts
+        await db.collection("notifications").doc(docId).update({
+          sentAt: admin.firestore.FieldValue.serverTimestamp(),
+          messageId: response
+        });
 
-            } catch (e) {
-                console.error(`❌ Error sending to '${topic}': `, e.message);
-            }
-        }
-    });
+      } catch (e) {
+        console.error(`❌ Error sending to '${topic}':`, e.message);
+      }
+    }
+  });
 }, error => {
   console.error("Firestore Listener Error:", error);
 });
@@ -75,6 +74,5 @@ app.get("/", (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server listening on port ${ port } `);
+  console.log(`Server listening on port ${port}`);
 });
-```
